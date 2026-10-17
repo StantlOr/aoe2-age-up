@@ -77,12 +77,12 @@ html, body, #root {
   align-items: stretch;
 }
 
+
 .app-content {
   display: flex;
   flex-direction: column;
-  /* Default width matches the overlay's design width. Wider views opt in
-     by adding a modifier class (e.g. .app-content.wide for Calibration). */
-  width: 320px;
+  width: 100%;
+  min-width: 320px;
   background: transparent;
   border-radius: 8px;
   overflow: hidden;
@@ -90,9 +90,11 @@ html, body, #root {
 }
 
 .app-content.wide {
-  width: 1200px;
-  height: 720px;
+  width: 100%;
+  min-width: 1200px;
+  height: max(720px, 100vh);
 }
+
 /* In wide (Cal) mode, let the body + calibration view fill the remaining
    height below the title bar so the canvas + sidebar use the whole window. */
 .app-content.wide .view-body {
