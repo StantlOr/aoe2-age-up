@@ -106,17 +106,34 @@ function App() {
             physicalPos.y / scale,
           );
 
-          if (monitor) {
-            const monitorLogicalW = monitor.size.width / scale;
-            const monitorLogicalX = monitor.position.x / scale;
-            const monitorLogicalY = monitor.position.y / scale;
-            const x = monitorLogicalX + Math.max(0, (monitorLogicalW - CAL_WIN_W) / 2);
-            const y = monitorLogicalY + CAL_TOP_MARGIN;
-            await win.setSize(new LogicalSize(CAL_WIN_W, CAL_WIN_H));
-            await win.setPosition(new LogicalPosition(x, y));
-            // Sync the ResizeObserver's last-size cache so it doesn't fight us.
-            lastSizeRef.current = { w: CAL_WIN_W, h: CAL_WIN_H };
-          }
+          
+if (monitor) {
+  const monitorLogicalW = monitor.size.width / scale;
+  const monitorLogicalX = monitor.position.x / scale;
+  const monitorLogicalY = monitor.position.y / scale;
+
+  const currentSize = await win.innerSize();
+  const currentScale = await win.scaleFactor();
+
+  const targetW = Math.max(
+    CAL_WIN_W,
+    currentSize.width / currentScale
+  );
+  const targetH = Math.max(
+    CAL_WIN_H,
+    currentSize.height / currentScale
+  );
+
+  const x = monitorLogicalX +
+    Math.max(0, (monitorLogicalW - targetW) / 2);
+  const y = monitorLogicalY + CAL_TOP_MARGIN;
+
+  await win.setSize(new LogicalSize(targetW, targetH));
+  await win.setPosition(new LogicalPosition(x, y));
+
+  lastSizeRef.current = { w: targetW, h: targetH };
+}
+
         } catch (e) {
           console.error("Cal snap failed:", e);
         }
@@ -140,9 +157,25 @@ function App() {
     const last = lastSizeRef.current;
     if (last && last.w === w && last.h === h) return;
     lastSizeRef.current = { w, h };
-    getCurrentWindow().setSize(new LogicalSize(w, h)).catch((e) => {
-      console.error("setSize failed:", e);
-    });
+    
+const win = getCurrentWindow();
+
+Promise.all([win.innerSize(), win.scaleFactor()])
+  .then(([size, scale]) => {
+    const currentW = size.width / scale;
+    const currentH = size.height / scale;
+
+    if (w <= currentW && h <= currentH) return;
+
+    return win.setSize(
+      new LogicalSize(
+        Math.max(w, currentW),
+        Math.max(h, currentH)
+      )
+    );
+  })
+  .catch((e) => console.error("setSize failed:", e));
+
   }, []);
 
   const contentRef = useCallback((el: HTMLDivElement | null) => {
